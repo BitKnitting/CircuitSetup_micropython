@@ -4,6 +4,7 @@ import math
 import time
 import struct
 from atm90e32_registers import *
+import sys
 
 SPI_WRITE = 0
 SPI_READ = 1
@@ -11,7 +12,7 @@ SPI_READ = 1
 class ATM90e32:
     ##############################################################################
 
-    def __init__(self, linefreq, pgagain, ugain, igainA, igainB, igainC):
+    def __init__(self, linefreq, pgagain, ugain, igainA, igainB, igainC, chipType='esp8266'):
         self._linefreq = linefreq
         self._pgagain = pgagain
         self._ugain = ugain
@@ -19,11 +20,24 @@ class ATM90e32:
         self._igainB = igainB
         self._igainC = igainC
 
-        # Chip select pin
-        self.cs = Pin(15, Pin.OUT)
-        self.cs.on()
-        # Doc on esp8266 SPI hw init: http://bit.ly/2ZhqeRB
-        self.spi = SPI(1, baudrate=200000, polarity=1, phase=1)
+        if chipType == 'esp8266':
+            # Chip select pin
+            self.cs = Pin(15, Pin.OUT)
+            self.cs.on()
+            # Doc on esp8266 SPI hw init: http://bit.ly/2ZhqeRB
+            self.spi = SPI(1, baudrate=200000, polarity=1, phase=1)
+
+        # this is setup to work with the energy meter kit http://bit.ly/2kWjpq8
+        elif chipType == 'esp32':
+            self.cs = Pin(5, Pin.OUT)
+            self.cs.on()
+
+            # Doc on esp32 SPI hw init: http://bit.ly/2kVLihW
+            self.spi = SPI(2, baudrate=200000, polarity=1, phase=1, bits=8, firstbit=0,
+                           sck=Pin(18), mosi=Pin(23), miso=Pin(19))
+        else:
+            print('chip type not supported!')
+            sys.exit(0)
 
         self._init_config()
 
